@@ -1,47 +1,66 @@
-#define  _GNU_SOURCE
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "monty.h"
-bus_t bus = {NULL, NULL, NULL, 0};
-/**
-* main - monty code interp
-* @argc: num of arguments
-* @argv: file location
-* Return: 0
-*/
-int main(int argc, char *argv[])
-{
-	char *content;
-	FILE *file;
-	size_t size = 0;
-	ssize_t read_line = 1;
-	stack_t *stack = NULL;
-	unsigned int count = 0;
 
-	if (argc != 2)
+instruction_t instruction_cmd[] = {
+	{"push", f_push},
+	{"pall", f_pall},
+	{"pint", f_pint},
+	{"pop", f_pop},
+	{"swap", f_swap},
+	{"add", f_add},
+	{"nop", f_nop},
+	{"sub", f_sub},
+	{"div", f_div},
+	{"mul", f_mul},
+	{"mod", f_mod},
+	{"pchar", f_pchar},
+	{"pstr", f_pstr},
+	{"rotl", f_rotl},
+	{"rotr", f_rotr}
+};
+
+/**
+ * main - Entry point
+ * @argc: The num of command line args
+ * @argv: An array of strings containing the command line args
+ * Return: EXIT_SUCCESS if succes, EXIT_FAILURE otherwise.
+ */
+int main(int argc, char const *argv[])
+{
+	if (argc == 2)
 	{
-		fprintf(stderr, "USAGE: monty file\n");
-		exit(EXIT_FAILURE);
-	}
-	file = fopen(argv[1], "r");
-	bus.file = file;
-	if (!file)
-	{
-		fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
-		exit(EXIT_FAILURE);
-	}
-	while (read_line > 0)
-	{
-		content = NULL;
-		read_line = getline(&content, &size, file);
-		bus.content = content;
-		count++;
-		if (read_line > 0)
+		FILE *file;
+		char buff_line[1024], *token;
+		int cmd_num;
+		unsigned int i;
+		stack_t *top_element;
+
+		top_element = NULL;
+		file = fopen(argv[1], "r");
+		if (file == NULL)
 		{
-			execute(content, &stack, count, file);
+			fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
+			return (EXIT_FAILURE);
 		}
-		free(content);
+		for (i = 1; fgets(buff_line, sizeof(buff_line), file) != NULL; i++)
+		{
+			if (l_checker(buff_line) == 0)
+			{
+				cmd_num = sizeof(instruction_cmd) / sizeof(instruction_cmd[0]);
+				token = strtok(buff_line, " \n");
+				if (finder(token, cmd_num, &top_element, i) == 1)
+				{
+					fprintf(stderr, "L%d: unknown instruction %s\n", i, token);
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+		fclose(file);
+		free_dlistint(top_element);
+		return (EXIT_SUCCESS);
 	}
-	free_stack(stack);
-	fclose(file);
-return (0);
+	fprintf(stderr, "USAGE: monty file\n");
+	return (EXIT_FAILURE);
 }
