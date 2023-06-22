@@ -1,27 +1,47 @@
+#define  _GNU_SOURCE
+#include <stdio.h>
 #include "monty.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-char **op_toks = NULL;
-
+bus_t bus = {NULL, NULL, NULL, 0};
 /**
- * main - the entry point
- * @argc: the count of arguments
- * @argv: pointer to an array
- * Return: (EXIT_SUCCESS) on success otherwise (EXIT_FAILURE)
- */
-int main(int argc, char **argv)
+* main - monty code interp
+* @argc: num of arguments
+* @argv: file location
+* Return: 0
+*/
+int main(int argc, char *argv[])
 {
-	FILE *script_fd = NULL;
-	int exit_code = EXIT_SUCCESS;
+	char *content;
+	FILE *file;
+	size_t size = 0;
+	ssize_t read_line = 1;
+	stack_t *stack = NULL;
+	unsigned int count = 0;
 
 	if (argc != 2)
-		return (usage_error());
-	script_fd = fopen(argv[1], "r");
-	if (script_fd == NULL)
-		return (f_error(argv[1]));
-	exit_code = run(script_fd);
-	fclose(script_fd);
-	return (exit_code);
+	{
+		fprintf(stderr, "USAGE: monty file\n");
+		exit(EXIT_FAILURE);
+	}
+	file = fopen(argv[1], "r");
+	bus.file = file;
+	if (!file)
+	{
+		fprintf(stderr, "Error: Can't open file %s\n", argv[1]);
+		exit(EXIT_FAILURE);
+	}
+	while (read_line > 0)
+	{
+		content = NULL;
+		read_line = getline(&content, &size, file);
+		bus.content = content;
+		count++;
+		if (read_line > 0)
+		{
+			execute(content, &stack, count, file);
+		}
+		free(content);
+	}
+	free_stack(stack);
+	fclose(file);
+return (0);
 }
